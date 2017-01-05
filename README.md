@@ -1,2 +1,2 @@
 # Parallel-Computing
-Repo for CS336 - Parallel Computing Course 
+Repo for CS336 - Parallel Computing Course activities
