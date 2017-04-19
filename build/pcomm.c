@@ -14,7 +14,6 @@
 #define BOTH_FILES  2
 
 /* Prototypes */
-char *blk_to_str(void *);
 int is_equal(void *, void *);
 void print(void *);
 void print_block(void *);
@@ -80,9 +79,7 @@ int is_equal(void *value1, void *value2) {
 	long *ar1 = (long*) value1;
 	long *ar2 = (long*) value2;
 	int maxiter = 4;
-	//printf("%d\n", maxiter);
 	for(int index = 0; index < maxiter; index++) {
-		//printf("%08x == %08x\n", ar1[index], ar2[index]);
 		if(ar1[index] != ar2[index])
 			return index;
 	}
@@ -95,16 +92,12 @@ void print(void* val) {
 }
 
 void print_block(void *block) {
-	//printf("Printing block\n");
 	char *blk = (char*) block;
 	for(int i = 0; i < 32; i++)
 		printf("%c", blk[i]);
 	printf("\n");
 }
 
-char* blk_to_str(void *data) {	
-	return (char*)data;
-}
 int main(int argc, char const *argv[]) {
 	if(argc != 3) {
 		fprintf(stderr, "Usage: comm <file1> <file2> [flags]\n");
@@ -126,8 +119,7 @@ int main(int argc, char const *argv[]) {
 		}		
 		filearray[fileid-1].fsize = statbuf.st_size;		
 	}
-	//printf("File sizes saved\n");
-
+	
 	/* Attempt to map both open files to memory */
  	filearray[0].memmptr = (char*) mmap(NULL, filearray[0].fsize, PROT_READ, MAP_SHARED, filearray[0].fd, 0);
 	filearray[1].memmptr = (char*) mmap(NULL, filearray[1].fsize, PROT_READ, MAP_SHARED, filearray[1].fd, 0);
@@ -140,8 +132,7 @@ int main(int argc, char const *argv[]) {
 	if(filearray[1].memmptr == MAP_FAILED) {		
 		fprintf(stderr, "Failed to load file into memory.\n");
 		_exit(2);
-	}
-	//printf("Memory mapped\n");
+	}	
 
 	/**
 	* Todo: AVX-512 for string comparison 
@@ -169,16 +160,13 @@ int main(int argc, char const *argv[]) {
 	**/
 	numblks_req(filearray[0].fsize, &file1blkdata);
 	numblks_req(filearray[1].fsize, &file2blkdata);
-	printf("Number of blocks required: %d %d\n", file1blkdata.nblks, file2blkdata.nblks);
-	/*
-	__m256i *blocksfile1 = (__m256i *) malloc(sizeof(__m256i) * file1blkdata.nblks);
-	__m256i *blocksfile2 = (__m256i *) malloc(sizeof(__m256i) * file2blkdata.nblks);
-	*/
+	//printf("Number of blocks required: %d %d\n", file1blkdata.nblks, file2blkdata.nblks);
+	
 	__m256i *blocksfile1;
 	__m256i *blocksfile2;
 	if((posix_memalign((void**)&blocksfile1, 32, sizeof(__m256i) * file1blkdata.nblks)) == 0) {
 		if((posix_memalign((void**)&blocksfile2, 32, sizeof(__m256i) * file2blkdata.nblks)) == 0) {
-			//printf("memory is now aligned.\n");
+			
 		}
 	}
 	else {
