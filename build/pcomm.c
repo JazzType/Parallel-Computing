@@ -67,27 +67,28 @@ void compare_files(struct fparams fparam, int nblks, int s_offset, int e_offset)
 		equality = is_equal(&result, &mask);
 		if(equality == -1) {			
 			/* Line seen in both files */
-			printf("Line seen in both files\n");
+			//printf("Line seen in both files\n");
 			total[BOTH_FILES]++;
 			//printf(stdout, "%s", blk_to_str(&fparam.blocksfile1[0]));
-			print_block(&fparam.blocksfile1[iter]);
+			//print_block(&fparam.blocksfile1[iter]);
 		}
+		/*
 		else {
-			/* Block mismatch, fallback to memcmp */
+			// Block mismatch, fallback to memcmp 
 			equality = memcmp(&fparam.blocksfile1[iter], &fparam.blocksfile2[iter], 32);
 			if(equality <= 0) {
-				/* Line seen in first file */
+				//* Line seen in first file 
 				printf("Line seen in the first file\n");
 				total[FIRST_FILE]++;
 				print_block(&fparam.blocksfile1[iter]);
 			}
 			else {
-				/* Line seen in second file */
+				// Line seen in second file 
 				printf("Line seen in the second file\n");
 				total[SECOND_FILE]++;
-				print_block(&fparam.blocksfile1[iter]);
+				print_block(&fparam.blocksfile2[iter]);
 			}
-		}
+		}*/
 	}
 }
 
@@ -141,7 +142,7 @@ int main(int argc, char const *argv[]) {
 		}		
 		filearray[fileid-1].fsize = statbuf.st_size;		
 	}
-	printf("File sizes saved\n");
+	//printf("File sizes saved\n");
 
 	/* Attempt to map both open files to memory */
  	filearray[0].memmptr = (char*) mmap(NULL, filearray[0].fsize, PROT_READ, MAP_SHARED, filearray[0].fd, 0);
@@ -156,7 +157,7 @@ int main(int argc, char const *argv[]) {
 		fprintf(stderr, "Failed to load file into memory.\n");
 		_exit(2);
 	}
-	printf("Memory mapped\n");
+	//printf("Memory mapped\n");
 
 	/**
 	* Todo: AVX-512 for string comparison 
@@ -186,19 +187,36 @@ int main(int argc, char const *argv[]) {
 	numblks_req(filearray[0].fsize, &file1blkdata);
 	numblks_req(filearray[1].fsize, &file2blkdata);
 	printf("Number of blocks required: %d %d\n", file1blkdata.nblks, file2blkdata.nblks);
+	/*
+	__m256i *blocksfile1 = (__m256i *) malloc(sizeof(__m256i) * file1blkdata.nblks);
+	__m256i *blocksfile2 = (__m256i *) malloc(sizeof(__m256i) * file2blkdata.nblks);
+	*/
+	__m256i *blocksfile1;
+	__m256i *blocksfile2;
+	if((posix_memalign((void**)&blocksfile1, 32, sizeof(__m256i) * file1blkdata.nblks)) == 0) {
+		if((posix_memalign((void**)&blocksfile2, 32, sizeof(__m256i) * file2blkdata.nblks)) == 0) {
+			//printf("memory is now aligned.\n");
+		}
+	}
+	else {
+		fprintf(stderr, "Could not obtain aligned memory\n");
+		exit(-1);
+	}
 
-	__m256i blocksfile1[file1blkdata.nblks];
-	__m256i blocksfile2[file2blkdata.nblks];
-
+	//printf("Allocated file block arrays\n");
+	print(&blocksfile1[1]);
 	int niter = file1blkdata.nblks < file2blkdata.nblks ? file2blkdata.nblks : file1blkdata.nblks;
 	int blockno;
 	for(blockno = 0; blockno < niter; blockno++) {
+		//print(&indices);
 		blocksfile1[blockno] = _mm256_i32gather_epi32(filearray[0].memmptr, indices, 4);
 		blocksfile2[blockno] = _mm256_i32gather_epi32(filearray[1].memmptr, indices, 4);
+		//print(&blocksfile2);
+		//blocksfile2[blockno] = _mm256_setzero_si256();
+		//printf("iter: %d\n", blockno);
 		indices = _mm256_add_epi32(indices, mask7);
-		//print(&indices);
 	}
-
+	//printf("Standard mapping complete\n");
 	/* Handle the remainder of blocks */
 	if(file1blkdata.nblks < niter) {
 		blocksfile2[blockno] = _mm256_i32gather_epi32(filearray[1].memmptr, indices, 4);		
@@ -220,9 +238,10 @@ int main(int argc, char const *argv[]) {
 	struct fparams fparam;
 	fparam.blocksfile1 = blocksfile1;
 	fparam.blocksfile2 = blocksfile2;
-	printf("Now printing what is about to be sent\n");
-	print_block(&(fparam.blocksfile1[0]));
-	compare_files(fparam, nblkpthread, 0, 5);
-	
+	//printf("Now printing what is about to be sent\n");
+	//print_block(&(fparam.blocksfile1[0]));
+	compare_files(fparam, nblkpthread, 0, niter);
+	free(blocksfile1);
+	free(blocksfile2);
 	return 0;
 }
