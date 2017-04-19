@@ -26,7 +26,7 @@ struct mmapfile {
 };
 
 struct blkdata {
-	int nblks;
+	uint64_t nblks;
 	int bused;
 };
 
