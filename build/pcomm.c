@@ -73,7 +73,10 @@ int main(int argc, char const *argv[]) {
 		_exit(2);
 	}
 	printf("Memory mapped\n");
-	
+
+	/**
+	* 
+	**/
 	
 	/* Everything till now was successful, begin actual process */
 	compare_files(filearray);
@@ -116,6 +119,10 @@ void print_block(void *block) {
 	for(int i = 0; i < 32; i++)
 		printf("%c", blk[i]);
 	printf("\n");
+}
+
+char* blk_to_str(void *data) {	
+	return (char*)data;
 }
 
 void compare_files(struct mmapfile *filearray) {
@@ -176,13 +183,15 @@ void compare_files(struct mmapfile *filearray) {
 		equality = memcmp(&blocksfile1[0], &blocksfile2[0], 32);
 		if(equality <= 0) {
 			/* Line seen in first file */
+			printf("Line seen in the first file\n");
 			total[FIRST_FILE]++;
-			print(&blocksfile1[0]);
+			print_block(&blocksfile1);
 		}
 		else {
 			/* Line seen in second file */
+			printf("Line seen in the second file\n");
 			total[SECOND_FILE]++;
-			print(&blocksfile2);
+			print_block(&blocksfile2);
 		}
 	}
 }
