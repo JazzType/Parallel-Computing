@@ -14,10 +14,6 @@
 #define BOTH_FILES  2
 
 /* Prototypes */
-/*void compare_files(struct fparams *, int, int, int);
-void print(void *);
-int is_equal(void *, void *);
-void numblks_req(int, struct blkdata *);*/
 char *blk_to_str(void *);
 int is_equal(void *, void *);
 void print(void *);
@@ -55,40 +51,28 @@ void compare_files(struct fparams fparam, int nblks, int s_offset, int e_offset)
 	__m256i metaresult;
 	__m256i mask;	
 	int equality;
-	//print_block(&(fparam.blocksfile1[0]));
 	mask = _mm256_set_epi32(-1, -1, -1, -1, -1, -1, -1, -1);	
 	for(int iter = s_offset; iter < e_offset; iter++) {
 		result = _mm256_cmpeq_epi32(fparam.blocksfile1[iter], fparam.blocksfile2[iter]);
-		//print_block((&fparam.blocksfile1));
-		//print_block(&fparam.blocksfile2);
-		//print(&result);
 		metaresult = _mm256_cmpeq_epi32(result, mask);
-		//print(&metaresult);	
 		equality = is_equal(&result, &mask);
 		if(equality == -1) {			
 			/* Line seen in both files */
-			//printf("Line seen in both files\n");
-			total[BOTH_FILES]++;
-			//printf(stdout, "%s", blk_to_str(&fparam.blocksfile1[0]));
-			//print_block(&fparam.blocksfile1[iter]);
+			total[BOTH_FILES]++;			
 		}
-		/*
-		else {
-			// Block mismatch, fallback to memcmp 
-			equality = memcmp(&fparam.blocksfile1[iter], &fparam.blocksfile2[iter], 32);
-			if(equality <= 0) {
-				//* Line seen in first file 
-				printf("Line seen in the first file\n");
-				total[FIRST_FILE]++;
-				print_block(&fparam.blocksfile1[iter]);
-			}
-			else {
-				// Line seen in second file 
-				printf("Line seen in the second file\n");
-				total[SECOND_FILE]++;
-				print_block(&fparam.blocksfile2[iter]);
-			}
-		}*/
+		/**
+		* Any other case is not handled because focus of optimization was on 
+		* vector comparison using AVX2. This scenario was being utilized only 
+		* in the case when the two blocks loaded were being compared as a 256b 
+		* vector. In case they were not the same, then a different mechanism 
+		* has to be utilized which could not have been SIMD-oriented, since
+		* comparison ahs to be done on a finer level.
+		* To be as fair as possible to the original GNU comm program, 
+		* all output conditions have been closely replicated, i.e. comm(1) no 
+		* longer outputs the common portion of the file, and hence neither does this.
+		* To prevent any print-related bottlenecks, all print calls have been 
+		* commented out wherever possible, both in comm(1) and this AVX2 implementation.
+		**/
 	}
 }
 
@@ -161,7 +145,7 @@ int main(int argc, char const *argv[]) {
 
 	/**
 	* Todo: AVX-512 for string comparison 
-  *		? Scrapped, AVX-512 supported only on Knight's Landing
+  *		? Scrapped, AVX-512 supported only on Knight's Landing and Xeon Phi series CPUs
 	*		=> Using AVX2 instead, 256b instead of 512b
 	**/	
 	
@@ -172,8 +156,7 @@ int main(int argc, char const *argv[]) {
 	__m256i file1, file2;
 	__m256i indices = _mm256_maskload_epi32(idxs, mask);
 	__m256i zero = _mm256_setzero_si256();
-	__m256i mask7 = _mm256_set_epi32(8, 8, 8, 8, 8, 8, 8, 8);	
-	__m256i stringarr[2] = {_mm256_setzero_si256(), _mm256_setzero_si256()};
+	__m256i mask7 = _mm256_set_epi32(8, 8, 8, 8, 8, 8, 8, 8);		
 	
 	/* Structures for getting block breakdown information */
 	struct blkdata file1blkdata, file2blkdata;
@@ -204,7 +187,7 @@ int main(int argc, char const *argv[]) {
 	}
 
 	//printf("Allocated file block arrays\n");
-	print(&blocksfile1[1]);
+	//print(&blocksfile1[1]);
 	int niter = file1blkdata.nblks < file2blkdata.nblks ? file2blkdata.nblks : file1blkdata.nblks;
 	int blockno;
 	for(blockno = 0; blockno < niter; blockno++) {
@@ -243,5 +226,8 @@ int main(int argc, char const *argv[]) {
 	compare_files(fparam, nblkpthread, 0, niter);
 	free(blocksfile1);
 	free(blocksfile2);
+	munmap(filearray[0].memmptr, filearray[0].fsize);
+	munmap(filearray[1].memmptr, filearray[1].fsize);
+	free(filearray);
 	return 0;
 }
