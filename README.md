@@ -1,7 +1,7 @@
 # Parallel-Computing
 Repo for CS336 - Parallel Computing Course Final Project
 
-Companion blog: bookish-enigma.blogspot.in
+Companion blog: http://bookish-enigma.blogspot.in
 
 ## Project description
 
