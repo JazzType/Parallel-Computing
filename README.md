@@ -16,11 +16,11 @@ Parallelizing GNU comm
 1. Clone the repo
 2. Build using one of the following commands:
 - `$ make all` - Build both threaded and non-threaded binaries 
-- `$ make simd` - Build only threaded binary
-- `$ make thread` - Build only non-threaded binary
+- `$ make simd` - Build only non-threaded binary
+- `$ make thread` - Build only threaded binary
 
 Running `make` will build both binaries by default.
 
 #### Running tests
 
-Navigate to /tests folder, and run `./run-tests.sh`. It will output all three times for each input file, for all three binaries.
+Navigate to /tests folder, and run `./run-tests.sh`. It will output all three times for each input file, for all three binaries. You may use any input file you like. Recommended source: [Project Gutenberg](https://gutenberg.org)
